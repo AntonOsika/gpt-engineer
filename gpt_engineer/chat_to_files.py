@@ -1,3 +1,4 @@
+import os
 import re
 
 
@@ -40,3 +41,28 @@ def to_files(chat, workspace):
     files = parse_chat(chat)
     for file_name, file_content in files:
         workspace[file_name] = file_content
+
+
+# Get code content from a code list
+def get_code_strings(input):
+    filesPaths = input["file_list.txt"].split("\n")
+    filesDict = {}
+    for filePath in filesPaths:
+        fileData = ""
+        with open(filePath, "r") as file:
+            fileData = file.read()
+        if fileData:
+            fileName = os.path.basename(filePath).split("/")[-1]
+            filesDict[fileName] = fileData
+    return filesDict
+
+
+# Format file for inputing to chat prompt
+def format_file_to_input(fileName, fileContent):
+    filestr = f"""
+    {fileName}
+    ```
+    {fileContent}
+    ```
+    """
+    return filestr

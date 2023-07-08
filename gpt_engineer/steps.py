@@ -9,7 +9,7 @@ from typing import List
 from termcolor import colored
 
 from gpt_engineer.ai import AI
-from gpt_engineer.chat_to_files import to_files
+from gpt_engineer.chat_to_files import format_file_to_input, get_code_strings, to_files
 from gpt_engineer.db import DBs
 from gpt_engineer.learning import human_input
 
@@ -17,6 +17,17 @@ from gpt_engineer.learning import human_input
 def setup_sys_prompt(dbs: DBs) -> str:
     return (
         dbs.preprompts["generate"] + "\nUseful to know:\n" + dbs.preprompts["philosophy"]
+    )
+
+
+def setup_sys_prompt_existing_code(dbs: DBs) -> str:
+    """
+    Similar to code generation, but using an existing code base.
+    """
+    return (
+        dbs.preprompts["implement_on_existing"]
+        + "\nUseful to know:\n"
+        + dbs.preprompts["philosophy"]
     )
 
 
@@ -252,6 +263,29 @@ def use_feedback(ai: AI, dbs: DBs):
     return messages
 
 
+def improve_existing_code(ai: AI, dbs: DBs):
+    """
+    Based on a list of existing files, ask the AI agent to
+    improve, fix or add a new functionality
+    Necessary to have a 'file_list.txt' and a 'prompt' in the project folder.
+    The file_list.txt should have the path of the code to be changed
+    The prompt should have the request for change.
+    """
+    filesInfo = get_code_strings(dbs.input)
+    messages = [
+        ai.fsystem(setup_sys_prompt_existing_code(dbs)),
+        ai.fuser(f"Instructions: {dbs.input['prompt']}"),
+    ]
+    # Add files as input
+    for filename, filestr in filesInfo.items():
+        codeInput = format_file_to_input(filename, filestr)
+        messages.append(ai.fuser(f"{codeInput}"))
+
+    messages = ai.next(messages)
+    to_files(messages[-1]["content"], dbs.workspace)
+    return messages
+
+
 def fix_code(ai: AI, dbs: DBs):
     code_output = json.loads(dbs.logs[gen_code.__name__])[-1]["content"]
     messages = [
@@ -284,6 +318,7 @@ class Config(str, Enum):
     EXECUTE_ONLY = "execute_only"
     EVALUATE = "evaluate"
     USE_FEEDBACK = "use_feedback"
+    IMPROVE_CODE = "improve_code"
 
 
 # Different configs of what steps to run
@@ -334,6 +369,7 @@ STEPS = {
     Config.USE_FEEDBACK: [use_feedback, gen_entrypoint, execute_entrypoint, human_review],
     Config.EXECUTE_ONLY: [execute_entrypoint],
     Config.EVALUATE: [execute_entrypoint, human_review],
+    Config.IMPROVE_CODE: [improve_existing_code],
 }
 
 # Future steps that can be added:
