@@ -64,6 +64,17 @@ To get started, create a codespace for this repository by clicking this 👇
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/AntonOsika/gpt-engineer/codespaces)
 
+## Getting Started with Docker
+
+**Building the image**:
+- `git clone https://github.com/AntonOsika/gpt-engineer.git`
+- `docker build --rm -t gpt-engineer .`
+
+**Running the image**:
+- `docker run -it --rm -e OPENAI_API_KEY="YOUR OPENAI KEY" -v ./your-project:/project gpt-engineer`
+
+The `-v` flag mounts the `your-project` folder into the container. Make sure to have a `prompt` file in there.
+
 ## Features
 
 You can specify the "identity" of the AI agent by editing the files in the `preprompts` folder.
